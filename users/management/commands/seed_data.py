@@ -1,0 +1,143 @@
+from django.core.management.base import BaseCommand
+
+from projects.models import Project
+from users.models import User
+
+USERS = [
+    {
+        "email": "maria@yandex.ru",
+        "password": "password",
+        "name": "Мария",
+        "surname": "Иванова",
+        "phone": "+79011111111",
+        "about": "Backend-разработчица, увлекаюсь Django.",
+        "github_url": "https://github.com/maria-test",
+    },
+    {
+        "email": "ivan@example.com",
+        "password": "password123",
+        "name": "Иван",
+        "surname": "Петров",
+        "phone": "+79022222222",
+        "about": "Fullstack, нравятся pet-проекты.",
+        "github_url": "https://github.com/ivan-test",
+    },
+    {
+        "email": "anna@example.com",
+        "password": "password123",
+        "name": "Анна",
+        "surname": "Сидорова",
+        "phone": "+79033333333",
+        "about": "Frontend, React и немного Vue.",
+        "github_url": "",
+    },
+    {
+        "email": "oleg@example.com",
+        "password": "password123",
+        "name": "Олег",
+        "surname": "Кузнецов",
+        "phone": "+79044444444",
+        "about": "DevOps, ищу команду для опенсорса.",
+        "github_url": "",
+    },
+]
+
+PROJECTS = [
+    {
+        "owner_email": "maria@yandex.ru",
+        "name": "Платформа для путешественников",
+        "description": (
+            "Сервис для планирования маршрутов путешествий "
+            "и обмена опытом между путешественниками."
+        ),
+        "status": "open",
+        "github_url": "",
+    },
+    {
+        "owner_email": "ivan@example.com",
+        "name": "Чат-бот для изучения языков",
+        "description": (
+            "Telegram-бот, который ежедневно присылает фразы "
+            "на иностранном языке и проверяет их перевод."
+        ),
+        "status": "open",
+        "github_url": "https://github.com/example/lang-bot",
+    },
+    {
+        "owner_email": "anna@example.com",
+        "name": "Open source UI-кит",
+        "description": (
+            "Набор переиспользуемых React-компонентов "
+            "с поддержкой темизации и i18n."
+        ),
+        "status": "open",
+        "github_url": "",
+    },
+    {
+        "owner_email": "oleg@example.com",
+        "name": "Мониторинг для домашних серверов",
+        "description": (
+            "Лёгковесная панель для отслеживания состояния домашних серверов "
+            "с уведомлениями в Telegram."
+        ),
+        "status": "closed",
+        "github_url": "",
+    },
+]
+
+
+class Command(BaseCommand):
+    help = "Seed the database with demo users and projects."
+
+    def handle(self, *args, **options):
+        for data in USERS:
+            user, created = User.objects.get_or_create(
+                email=data["email"],
+                defaults={
+                    "name": data["name"],
+                    "surname": data["surname"],
+                    "phone": data["phone"],
+                    "about": data["about"],
+                    "github_url": data["github_url"],
+                },
+            )
+            if created:
+                user.set_password(data["password"])
+                user.save()
+                self.stdout.write(self.style.SUCCESS(f"Created user {user.email}"))
+            else:
+                self.stdout.write(f"User {user.email} already exists")
+
+        for data in PROJECTS:
+            owner = User.objects.get(email=data["owner_email"])
+            project, created = Project.objects.get_or_create(
+                name=data["name"],
+                owner=owner,
+                defaults={
+                    "description": data["description"],
+                    "status": data["status"],
+                    "github_url": data["github_url"],
+                },
+            )
+            project.participants.add(owner)
+            if created:
+                self.stdout.write(
+                    self.style.SUCCESS(f"Created project {project.name}")
+                )
+            else:
+                self.stdout.write(f"Project {project.name} already exists")
+
+        if not User.objects.filter(is_superuser=True).exists():
+            User.objects.create_superuser(
+                email="admin@example.com",
+                password="admin12345",
+                name="Admin",
+                surname="Root",
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Created superuser admin@example.com / admin12345"
+                )
+            )
+
+        self.stdout.write(self.style.SUCCESS("Done."))
