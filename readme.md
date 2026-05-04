@@ -82,7 +82,7 @@ cp .env_example .env
 | `POSTGRES_PASSWORD`   | пароль БД                                            |
 | `POSTGRES_HOST`       | `localhost` для локальной разработки                 |
 | `POSTGRES_PORT`       | `5432`                                               |
-| `TASK_VERSION`        | **`1`** — задаёт папку шаблонов `templates_var1`     |
+| `DJANGO_ALLOWED_HOSTS`| Список хостов через запятую (по умолчанию `localhost,127.0.0.1`) |
 
 ### 5. Запустить PostgreSQL
 
@@ -175,3 +175,8 @@ python manage.py test users projects
 ```bash
 flake8 users projects team_finder
 ```
+
+## Автор
+
+- GitHub: [SOSyefen](https://github.com/SOSyefen)
+- Email: vladkeshan@yandex.ru

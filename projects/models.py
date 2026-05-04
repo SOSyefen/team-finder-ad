@@ -1,16 +1,19 @@
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 
-from users.models import validate_github_url
+from users.validators import validate_github_url
+
+from .constants import (
+    NAME_MAX_LENGTH,
+    STATUS_CHOICES,
+    STATUS_MAX_LENGTH,
+    STATUS_OPEN,
+)
 
 
 class Project(models.Model):
-    STATUS_CHOICES = [
-        ("open", "Open"),
-        ("closed", "Closed"),
-    ]
-
-    name = models.CharField("Название", max_length=200)
+    name = models.CharField("Название", max_length=NAME_MAX_LENGTH)
     description = models.TextField("Описание", blank=True, default="")
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -23,7 +26,10 @@ class Project(models.Model):
         "GitHub", blank=True, default="", validators=[validate_github_url]
     )
     status = models.CharField(
-        "Статус", max_length=6, choices=STATUS_CHOICES, default="open"
+        "Статус",
+        max_length=STATUS_MAX_LENGTH,
+        choices=STATUS_CHOICES,
+        default=STATUS_OPEN,
     )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -39,3 +45,10 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self) -> str:
+        """Канонический URL для отображения проекта на сайте.
+
+        Используется в админке (ссылка «посмотреть на сайте»).
+        """
+        return reverse("projects:detail", args=[self.pk])

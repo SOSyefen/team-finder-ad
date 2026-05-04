@@ -1,5 +1,6 @@
 from django import forms
 
+from .constants import STATUS_CHOICES
 from .models import Project
 
 
@@ -15,7 +16,5 @@ class ProjectForm(forms.ModelForm):
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 5}),
-            "status": forms.Select(
-                choices=[("open", "Открыт"), ("closed", "Закрыт")]
-            ),
+            "status": forms.Select(choices=STATUS_CHOICES),
         }

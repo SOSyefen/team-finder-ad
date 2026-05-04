@@ -1,33 +1,41 @@
+"""Авто-генерация аватарки для пользователей без загруженной картинки."""
 import io
 import random
 
 from django.core.files.base import ContentFile
 from PIL import Image, ImageDraw, ImageFont
 
-PALETTE = [
-    "#5B8DEF", "#7C5CFF", "#3DBE8B", "#E0935A",
-    "#D8627E", "#4FA3A3", "#7E8AA1", "#B07AB0",
-    "#5C8C57", "#C97B4A",
-]
+from .constants import (
+    AVATAR_ANCHOR,
+    AVATAR_FALLBACK_LETTER,
+    AVATAR_FONT_NAME,
+    AVATAR_FONT_RATIO,
+    AVATAR_PALETTE,
+    AVATAR_SIZE,
+    AVATAR_TEXT_FILL,
+)
 
 
-def generate_avatar(letter: str, size: int = 256) -> ContentFile:
-    bg_color = random.choice(PALETTE)
+def generate_avatar(letter: str, size: int = AVATAR_SIZE) -> ContentFile:
+    """Возвращает PNG-аватарку: первая буква на однотонном цветном фоне."""
+    bg_color = random.choice(AVATAR_PALETTE)
     img = Image.new("RGB", (size, size), color=bg_color)
     draw = ImageDraw.Draw(img)
 
-    text = (letter or "?")[0].upper()
+    text = (letter or AVATAR_FALLBACK_LETTER)[0].upper()
     try:
-        font = ImageFont.truetype("arial.ttf", size=int(size * 0.55))
+        font = ImageFont.truetype(
+            AVATAR_FONT_NAME, size=int(size * AVATAR_FONT_RATIO)
+        )
     except OSError:
         font = ImageFont.load_default()
 
-    bbox = draw.textbbox((0, 0), text, font=font)
+    bbox = draw.textbbox(AVATAR_ANCHOR, text, font=font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
     x = (size - text_w) / 2 - bbox[0]
     y = (size - text_h) / 2 - bbox[1]
-    draw.text((x, y), text, fill="white", font=font)
+    draw.text((x, y), text, fill=AVATAR_TEXT_FILL, font=font)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

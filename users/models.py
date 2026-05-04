@@ -1,43 +1,31 @@
-import re
 import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from django.core.exceptions import ValidationError
 from django.db import models
 
 from .avatar import generate_avatar
+from .constants import (
+    ABOUT_MAX_LENGTH,
+    EMAIL_MAX_LENGTH,
+    NAME_MAX_LENGTH,
+    PHONE_MAX_LENGTH,
+    SURNAME_MAX_LENGTH,
+)
 from .managers import UserManager
-
-
-def normalize_phone(value: str) -> str:
-    if value and value.startswith("8") and len(value) == 11:
-        return "+7" + value[1:]
-    return value
-
-
-def validate_phone(value: str) -> None:
-    if not re.fullmatch(r"(\+7|8)\d{10}", value or ""):
-        raise ValidationError(
-            "Телефон должен быть в формате 8XXXXXXXXXX или +7XXXXXXXXXX"
-        )
-
-
-def validate_github_url(value: str) -> None:
-    if not value:
-        return
-    pattern = r"^https?://(www\.)?github\.com/.+"
-    if not re.match(pattern, value):
-        raise ValidationError("Ссылка должна вести на github.com")
+from .services import normalize_phone
+from .validators import validate_github_url, validate_phone
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField("Email", unique=True)
-    name = models.CharField("Имя", max_length=124)
-    surname = models.CharField("Фамилия", max_length=124)
+    email = models.EmailField(
+        "Email", unique=True, max_length=EMAIL_MAX_LENGTH
+    )
+    name = models.CharField("Имя", max_length=NAME_MAX_LENGTH)
+    surname = models.CharField("Фамилия", max_length=SURNAME_MAX_LENGTH)
     avatar = models.ImageField("Аватар", upload_to="avatars/")
     phone = models.CharField(
         "Телефон",
-        max_length=12,
+        max_length=PHONE_MAX_LENGTH,
         unique=True,
         validators=[validate_phone],
         blank=True,
@@ -46,7 +34,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     github_url = models.URLField(
         "GitHub", blank=True, default="", validators=[validate_github_url]
     )
-    about = models.TextField("О себе", max_length=256, blank=True, default="")
+    about = models.TextField(
+        "О себе", max_length=ABOUT_MAX_LENGTH, blank=True, default=""
+    )
     is_active = models.BooleanField("Активный", default=True)
     is_staff = models.BooleanField("Администратор", default=False)
     favorites = models.ManyToManyField(
@@ -65,7 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        ordering = ["id"]
+        ordering = ["-date_joined"]
 
     def __str__(self):
         return f"{self.name} {self.surname} <{self.email}>"
