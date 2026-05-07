@@ -3,7 +3,6 @@ from http import HTTPStatus
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from .constants import STATUS_CLOSED, STATUS_OPEN
@@ -49,12 +48,12 @@ def project_detail(request, pk):
 @login_required
 def create_project(request):
     form = ProjectForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         project = form.save(commit=False)
         project.owner = request.user
         project.save()
         project.participants.add(request.user)
-        return redirect(reverse(PROJECT_DETAIL, args=[project.pk]))
+        return redirect(PROJECT_DETAIL, project.pk)
     return render(
         request,
         "projects/create-project.html",
@@ -66,11 +65,11 @@ def create_project(request):
 def edit_project(request, pk):
     project = get_object_or_404(Project, pk=pk)
     if project.owner_id != request.user.id and not request.user.is_staff:
-        return redirect(reverse(PROJECT_DETAIL, args=[project.pk]))
+        return redirect(PROJECT_DETAIL, project.pk)
     form = ProjectForm(request.POST or None, instance=project)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         form.save()
-        return redirect(reverse(PROJECT_DETAIL, args=[project.pk]))
+        return redirect(PROJECT_DETAIL, project.pk)
     return render(
         request,
         "projects/create-project.html",

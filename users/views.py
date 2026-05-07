@@ -1,7 +1,8 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+
+from projects.services import paginate
 
 from .forms import (
     ChangePasswordForm,
@@ -10,10 +11,14 @@ from .forms import (
     RegisterForm,
 )
 from .models import User
-from .services import paginate
 
 PROJECTS_LIST_REDIRECT = "projects:list"
 LOGIN_REDIRECT = "users:login"
+
+FILTER_OWNERS_OF_FAVORITES = "owners-of-favorite-projects"
+FILTER_OWNERS_OF_PARTICIPATING = "owners-of-participating-projects"
+FILTER_INTERESTED_IN_MY = "interested-in-my-projects"
+FILTER_PARTICIPANTS_OF_MY = "participants-of-my-projects"
 
 
 def _redirect_authenticated(request):
@@ -45,12 +50,6 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect(PROJECTS_LIST_REDIRECT)
-
-
-FILTER_OWNERS_OF_FAVORITES = "owners-of-favorite-projects"
-FILTER_OWNERS_OF_PARTICIPATING = "owners-of-participating-projects"
-FILTER_INTERESTED_IN_MY = "interested-in-my-projects"
-FILTER_PARTICIPANTS_OF_MY = "participants-of-my-projects"
 
 
 def _apply_user_filter(queryset, filter_key: str, current_user):
@@ -105,17 +104,17 @@ def edit_profile(request):
     form = EditProfileForm(
         request.POST or None, request.FILES or None, instance=request.user
     )
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         form.save()
-        return redirect(reverse("users:detail", args=[request.user.id]))
+        return redirect("users:detail", request.user.id)
     return render(request, "users/edit_profile.html", {"form": form})
 
 
 @login_required
 def change_password(request):
     form = ChangePasswordForm(request.user, request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    if form.is_valid():
         user = form.save()
         update_session_auth_hash(request, user)
-        return redirect(reverse("users:detail", args=[request.user.id]))
+        return redirect("users:detail", request.user.id)
     return render(request, "users/change_password.html", {"form": form})

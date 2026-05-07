@@ -2,12 +2,14 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordChangeForm
 
-from .models import User, normalize_phone
+from .constants import NAME_MAX_LENGTH, SURNAME_MAX_LENGTH
+from .models import User
+from .services import normalize_phone
 
 
 class RegisterForm(forms.ModelForm):
-    name = forms.CharField(label="Имя", max_length=124)
-    surname = forms.CharField(label="Фамилия", max_length=124)
+    name = forms.CharField(label="Имя", max_length=NAME_MAX_LENGTH)
+    surname = forms.CharField(label="Фамилия", max_length=SURNAME_MAX_LENGTH)
     email = forms.EmailField(label="Email")
     password = forms.CharField(label="Пароль", widget=forms.PasswordInput)
 
@@ -47,7 +49,9 @@ class LoginForm(forms.Form):
         email = cleaned.get("email")
         password = cleaned.get("password")
         if email and password:
-            user = authenticate(self.request, username=email, password=password)
+            user = authenticate(
+                self.request, username=email, password=password
+            )
             if user is None:
                 raise forms.ValidationError("Неверный имейл или пароль")
             self.user = user

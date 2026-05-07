@@ -1,7 +1,10 @@
+from http import HTTPStatus
+
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import User, normalize_phone
+from .models import User
+from .services import normalize_phone
 
 
 class UserModelTests(TestCase):
@@ -41,9 +44,9 @@ class UserModelTests(TestCase):
 
 
 class AuthFlowTests(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.user = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
             email="login@example.com",
             password="qwerty12345",
             name="Log",
@@ -75,7 +78,7 @@ class AuthFlowTests(TestCase):
                 "password": "qwerty12345",
             },
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "уже существует")
 
     def test_login_and_logout(self):
@@ -83,32 +86,37 @@ class AuthFlowTests(TestCase):
             reverse("users:login"),
             {"email": "login@example.com", "password": "qwerty12345"},
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         response = self.client.get(reverse("users:logout"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_login_wrong_password(self):
         response = self.client.post(
             reverse("users:login"),
             {"email": "login@example.com", "password": "wrong"},
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "Неверный")
 
 
 class EditProfileTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
             email="edit@example.com",
             password="qwerty12345",
             name="Edit",
             surname="Me",
         )
-        self.client = Client()
-        self.client.force_login(self.user)
+
+    def setUp(self):
+        # Залогиненный клиент создаётся в setUp,
+        # чтобы анонимный self.client остался нетронутым.
+        self.user_client = Client()
+        self.user_client.force_login(self.user)
 
     def test_edit_profile_rejects_non_github_url(self):
-        response = self.client.post(
+        response = self.user_client.post(
             reverse("users:edit_profile"),
             {
                 "name": "Edit",
@@ -116,11 +124,11 @@ class EditProfileTests(TestCase):
                 "github_url": "https://gitlab.com/me",
             },
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(response, "github")
 
     def test_edit_profile_normalizes_phone(self):
-        self.client.post(
+        self.user_client.post(
             reverse("users:edit_profile"),
             {
                 "name": "Edit",
