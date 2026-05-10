@@ -108,12 +108,8 @@ class EditProfileTests(TestCase):
             name="Edit",
             surname="Me",
         )
-
-    def setUp(self):
-        # Залогиненный клиент создаётся в setUp,
-        # чтобы анонимный self.client остался нетронутым.
-        self.user_client = Client()
-        self.user_client.force_login(self.user)
+        cls.user_client = Client()
+        cls.user_client.force_login(cls.user)
 
     def test_edit_profile_rejects_non_github_url(self):
         response = self.user_client.post(
